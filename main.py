@@ -8,7 +8,7 @@ import time
 import pycom
 from machine import SD, Pin, I2C, RTC
 import _thread
-import os
+import os 
 
 #print("imports successful")
 
@@ -44,7 +44,6 @@ def time_calc(): #due to change with new RTC component coming in
     return(time_stamp)
 
 def chipscan(): #picking up the NFC chips
-    global counter
     # Send REQA for ISO14443A card type
     atqa = nfc.mfrc630_iso14443a_WUPA_REQA(nfc.MFRC630_ISO14443_CMD_REQA)
     if (atqa != 0):
@@ -53,7 +52,6 @@ def chipscan(): #picking up the NFC chips
         uid_len = nfc.mfrc630_iso14443a_select(uid)
         #print("Detected")
         if (uid_len > 0): # A valid UID has been detected, print details
-            counter += 1
             #print("UID Detected")
             uid_str=map(str,uid)
             uid_str=''.join(uid_str)
@@ -80,6 +78,9 @@ def mainloop(): #main loop looking for and handling UIDs from chips
         elif uid_send == "no_chip":
             time.sleep(0.01)
             negindication()
+        elif uid_send == "115771133000000":
+            time.sleep(0.01)
+            setexternalrtc()
         else:
             time_send = time_calc()
             #tap = '"{' + '"uid" : "' + uid_send + '" , ' + '"timestamp" : ' + '"' + time_send + '"}"'
@@ -120,6 +121,18 @@ def negindication(): #periodic flash
         count = 0
     else:
         count = count + 1
+
+def setexternalrtc():
+    buzzer(True)
+    led(True)
+    time.sleep(0.5)
+    buzzer(False)
+    time.sleep(0.5)
+    buzzer(True)
+    time.sleep(0.5)
+    buzzer(False)
+    #do something
+    led(False)
 
 ################# Functions end
 
@@ -165,7 +178,6 @@ print(rtc.now())
 
 #setup taps pending list and counter
 taps_pending = []
-counter = 0
 #print("variables set")
 count = 0
 
