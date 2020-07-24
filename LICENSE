@@ -1,13 +1,25 @@
 MIT License
 
-Copyright (c) 2020 Tim
+Copyright (c) 2020 Timothy Mockford
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
+to use, copy, modify, merge, publish, distribute, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
+
+You may use this Software to make profit as a organisation or individual, where the Software and device us built
+and operated by the organisation or individual only (you are allowed to build your own devices to use to time your own races 
+where members of the public pay to take part)
+
+You may not sell the Software or any derivatives without expressed permission of the owner of this repository.
+
+You may not build and sell the device specified for the purpose specified without permission of the owner of this repository.
+
+Any forks, distributions or derivatives of this Software must reference the origin.
+
+
+
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
@@ -19,6 +31,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-What I would ask is that if you go on to use this code in a device you sell, you 
-make a donation (contact me) to help the work continue on this project.

@@ -8,7 +8,8 @@ import time
 import pycom
 from machine import SD, Pin, I2C, RTC
 import _thread
-import os 
+import os
+import DS3231
 
 #print("imports successful")
 
@@ -22,7 +23,7 @@ def chiplog(tap): #local recording of taps as csv on sd card
 
 def errorlog(error): #local recording of errors as csv on sd card - needs some improvement
     error = str(error)
-    time = rtc.now()
+    time = time_calc()
     errortime = str(time)
     errortext = errortime + "-" + error
     f = open("/sd/errorlog.csv", "a")
@@ -31,16 +32,20 @@ def errorlog(error): #local recording of errors as csv on sd card - needs some i
     f.close()
 
 
-def time_calc(): #due to change with new RTC component coming in
-    time_now = rtc.now()
-    #year = str(time_now[0])
-    #month = str(time_now[1])
-    #day = str(time_now[2])
-    #hour = str(time_now[4])
-    #minute = str(time_now[5])
-    #second = str(time_now[6])
+def time_calc(): #get time from external RTC
+    time_now = ds.DateTime()
+    year = str(time_now[0])
+    month = str(time_now[1])
+    day = str(time_now[2])
+    weekday =str(time_now[3])
+    hour = str(time_now[4])
+    minute = str(time_now[5])
+    second = str(time_now[6])
+    if len(second) == 1:
+        second = "0" + second
+
     #millisecond = str(time_now[7])
-    time_stamp = str(time_now[0]) + "-" + str(time_now[1]) + "-" + str(time_now[2]) + " " + str(time_now[3]) + ":" + str(time_now[4]) + ":" + str(time_now[5]) + "." + str(time_now[6])
+    time_stamp = year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second
     return(time_stamp)
 
 def chipscan(): #picking up the NFC chips
@@ -131,7 +136,32 @@ def setexternalrtc():
     buzzer(True)
     time.sleep(0.5)
     buzzer(False)
-    #do something
+    
+    #start ntp sync
+    rtc.ntp_sync("0.uk.pool.ntp.org",update_period=3600)
+    time.sleep(5)
+    
+    if rtc.synced() == True:
+        print("Time synced")
+        time_now = rtc.now()
+        #set date
+        ds.Year(time_now[0])
+        ds.Month(time_now[1])
+        ds.Day(time_now[2])
+        #set time
+        ds.Hour(time_now[3])
+        ds.Minute(time_now[4])
+        ds.Second(time_now[5])
+        #indicate
+        buzzer(True)
+        time.sleep(0.5)
+        buzzer(False)
+
+
+    else:
+        print("Time not synced")
+        errorlog("Time not synced") #and log
+
     led(False)
 
 ################# Functions end
@@ -153,28 +183,10 @@ time.sleep(1)
 buzzer(False)
 led(False)
 
-#setup real rtc
-#i2c = I2C(0, I2C.MASTER) #intiate I2C bus as master
-#rtc = pcf8563.PCF8563(i2c)
-
-#setup network rtc - dropping soon
-print("Getting time from NTP")
-time.sleep(5)
-rtc = RTC()
-rtc.ntp_sync("0.uk.pool.ntp.org",update_period=3600)
-time.sleep(2)
-print(rtc.synced())
-
-if rtc.synced() == True:
-    print("Time synced")
-    #and log
-else:
-    print("Time not synced - using default 1.1.00")
-    rtc.init((2000, 1, 1, 0, 0, 0, 0, 0))
-    errorlog("Time not synced - using default 1.1.00") #and log
-
-print(rtc.now())
-
+#clock setup
+rtc = RTC() #internal RTC module
+i2c = I2C(0, pins=('P22','P21')) #setup i2c interface
+ds = DS3231.DS3231(i2c) #establish connection to i2c clock
 
 #setup taps pending list and counter
 taps_pending = []
@@ -187,7 +199,7 @@ nfc = MFRC630(py)
 #print("Scan setup")
 nfc.mfrc630_cmd_init() # Initialise the MFRC630 with some settings
 
-#RGB LED setuo
+#RGB LED setup
 pycom.heartbeat(False)
 RGB_BRIGHTNESS = 0x8
 RGB_RED = (RGB_BRIGHTNESS << 16)
