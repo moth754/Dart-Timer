@@ -5,9 +5,22 @@ The system records taps via NFC chips and relays the chip ID and the time of the
 
 The system makes use of Pycom's [Pybytes](https://pycom.io/products/software/pybytes-3/) as an easy way to manage the devices and recieve the data. The Pybytes software then sends the data on to the Google Sheet via HTTP post.
 
+Obviously you will need a stock of NFC chips to make this work, but these are freely available - just check it's compatible with a MFRC630. 
+
+Why is this different to other timing systems?
+- Others can build, use and develop for free
+- Uses Google Sheets so no additional specialist software is required and permissions can be managed easily (so a cut down view can shared with the public live during the race, marshals can see how many are on the course at a glance etc)
+- Low running costs (no ongoing license fee for the software or hardware)
+- Uses technology such as LoRa and NB-IOT to provide live data even in areas with poor mobile connectivity
+- Relatively low cost per checkpoint in comparison to other live data feed systems
+- Low cost and re-usable competitor devices (a simple wrist worn NFC tag)
+
+##### Go Fund Me link for the next stage of development - https://gf.me/u/yiimtw
+
 ## Features
 ### Working and tested
 * Records taps by NFC chips to local SD and send to Google Sheet
+* Competitor numbers, names distances etc are all held in Google Sheets, so permissions and changes are straight-forward
 * Visual and audible indication of successful tap by competitor
 * Can use wifi, LoRa ([The Things Network](https://www.thethingsnetwork.org/)) and NB-IOT (a low power, long range cellular network) to connect to the internet
 * Device design encloses the entire project in a small waterproof case
