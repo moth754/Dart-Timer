@@ -6,10 +6,11 @@ from pyscan import Pyscan
 from MFRC630 import MFRC630
 import time
 import pycom
-from machine import SD, Pin, I2C, RTC
+from machine import SD, I2C, RTC
+from PCA9554 import PCA9554 #for io expander
 import _thread
 import os
-import DS3231
+import DS3231 #for RTC
 
 #print("imports successful")
 
@@ -110,32 +111,32 @@ def checkpending(): #checks the unsent list and sends and unsent taps
 
 def posindication(): #beep and flash for successful scan
     global count
-    buzzer(True)
-    led(True)
+    buzzer.set()
+    led.set()
     time.sleep(0.5)
-    buzzer(False)
-    led(False)
+    buzzer.reset()
+    led.reset()
     count = 0
 
 def negindication(): #periodic flash
     global count
     if count == 300:
-        led(True)
+        led.set()
         time.sleep(0.2)
-        led(False)
+        led.reset()
         count = 0
     else:
         count = count + 1
 
 def setexternalrtc():
-    buzzer(True)
-    led(True)
+    buzzer.set()
+    led.set()
     time.sleep(0.5)
-    buzzer(False)
+    buzzer.reset()
     time.sleep(0.5)
-    buzzer(True)
+    buzzer.set()
     time.sleep(0.5)
-    buzzer(False)
+    buzzer.reset()
     
     #start ntp sync
     rtc.ntp_sync("0.uk.pool.ntp.org",update_period=3600)
@@ -153,16 +154,16 @@ def setexternalrtc():
         ds.Minute(time_now[4])
         ds.Second(time_now[5])
         #indicate
-        buzzer(True)
+        buzzer.set()
         time.sleep(0.5)
-        buzzer(False)
+        buzzer.reset()
 
 
     else:
         print("Time not synced")
         errorlog("Time not synced") #and log
 
-    led(False)
+    led.reset()
 
 ################# Functions end
 
@@ -172,16 +173,15 @@ os.mount(sd, "/sd")
 #print("SD card setup")
 
 #setup LEDs and buzzer
-#scanled = Pin('P3', mode=Pin.OUT) pin3 is the only other free GPIO pin found
-buzzer = Pin('P19', mode=Pin.OUT)
-led = Pin('P10', mode=Pin.OUT)
+led = PCA9554(line=1, direction=0)
+buzzer = PCA9554(line=2, direction=0)
 
 #tests LED and buzzer
-buzzer(True)
-led(True)
+buzzer.set()
+led.set()
 time.sleep(1)
-buzzer(False)
-led(False)
+buzzer.reset()
+led.reset()
 
 #clock setup
 rtc = RTC() #internal RTC module
