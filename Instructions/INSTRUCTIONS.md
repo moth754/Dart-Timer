@@ -51,7 +51,7 @@ Please look in the images folder to see images of each part of the construction.
 
 1. Decide how you want your case laid out
 2. Solder the switch to the battery with a trailing battery connector cable to attach to the Pyscan. Just connect the +ve wires to the switch.
-3. Cut the USB A to micro B (incl. with the power bank normally) in half. Adjust the length as required. Connect the power to the other throw on the switch. Solder the data lines from each side together to ensure connectivity.
+3. Cut the USB A to micro B (incl. with the power bank normally) in half. Adjust the length as required. Connect the power to the other throw on the switch. Solder the data lines from each side together to ensure connectivity. Run a flying lead from the +ve and -ve connections for the buzzer and LED.
 4. Solder the wires to the RTC
 5. Cut the stripboard to leave a length at least 20 holes long by 3 wide, with the connections running horizonatly accross 3 holes
 6. Solder male headers to one side of the stipboard (20 pin length). Solder wires for connecting to the RTC.
