@@ -34,7 +34,7 @@ Why is this different to other timing systems?
 The "to do" list can be found [here](https://trello.com/b/PtuwPh5d/timing-system) on Trello
 
 ## Instructions
-Build instructions can be found in the instructions folder.
+Build instructions can be found in the instructions folder [here](https://github.com/moth754/Dart-Timer/blob/master/Instructions/INSTRUCTIONS.md).
 
 # The Story
 For a couple of years I have marshalled and timed various events. These have mostly been trail running, with a bit of swim running added in for good measure. On the higher risk ultra events timing was done by GPS trackers, but for the rest either NFC (webscorer or SiE) or RFID timing was used.
@@ -52,7 +52,8 @@ Thanks the the following sources whom I have used thier code (in accordance with
 
 * DS3231 code from the [MicroPython Chinese Community](https://github.com/micropython-Chinese-Community/mpy-lib/tree/master/misc/DS3231)
 * This [post](https://railsrescue.com/blog/2015-05-28-step-by-step-setup-to-send-form-data-to-google-sheets/) by Scott Olmsted on posting to Google Sheets
-* Pycom support
+* Pycom support who have been amazing solving problems (largely created by me)
+* The PCA9554 library by akael "ported" by theshade
 * Everyone elses various posts on forums etc I read in the making of this!
 
 Special thanks to-
