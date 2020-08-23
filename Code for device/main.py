@@ -6,7 +6,7 @@ from pyscan import Pyscan
 from MFRC630 import MFRC630
 import time
 import pycom
-from machine import SD, I2C, RTC
+from machine import SD, I2C, RTC, Pin
 from PCA9554 import PCA9554 #for io expander
 import _thread
 import os
@@ -111,10 +111,12 @@ def checkpending(): #checks the unsent list and sends and unsent taps
 
 def posindication(): #beep and flash for successful scan
     global count
-    buzzer.set()
+    #buzzer.set()
+    buzzer(True)
     led.set()
     time.sleep(0.5)
-    buzzer.reset()
+    #buzzer.reset()
+    buzzer(False)
     led.reset()
     count = 0
 
@@ -129,14 +131,14 @@ def negindication(): #periodic flash
         count = count + 1
 
 def setexternalrtc():
-    buzzer.set()
+    buzzer(True)
     led.set()
     time.sleep(0.5)
-    buzzer.reset()
+    buzzer(False)
     time.sleep(0.5)
-    buzzer.set()
+    buzzer(True)
     time.sleep(0.5)
-    buzzer.reset()
+    buzzer(False)
     
     #start ntp sync
     rtc.ntp_sync("0.uk.pool.ntp.org",update_period=3600)
@@ -172,15 +174,26 @@ sd = SD()
 os.mount(sd, "/sd")
 #print("SD card setup")
 
-#setup LEDs and buzzer
-led = PCA9554(line=1, direction=0)
-buzzer = PCA9554(line=2, direction=0)
+#setup LEDs and buzzer using Pin
+#led = Pin('P2', mode=Pin.OUT) 
+buzzer = Pin('P10', mode=Pin.OUT)
 
-#tests LED and buzzer
-buzzer.set()
+#tests LED and buzzer using pin
+buzzer(True)
+#led(True)
+time.sleep(1)
+buzzer(False)
+#led(False)
+
+#setup LEDs and buzzer using IO expander
+led = PCA9554(line=1, direction=0)
+#buzzer = PCA9554(line=3, direction=0)
+
+#tests LED and buzzer using IO expander
+#buzzer.set()
 led.set()
 time.sleep(1)
-buzzer.reset()
+#buzzer.reset()
 led.reset()
 
 #clock setup
@@ -199,13 +212,8 @@ nfc = MFRC630(py)
 #print("Scan setup")
 nfc.mfrc630_cmd_init() # Initialise the MFRC630 with some settings
 
-#RGB LED setup
-pycom.heartbeat(False)
-RGB_BRIGHTNESS = 0x8
-RGB_RED = (RGB_BRIGHTNESS << 16)
-RGB_GREEN = (RGB_BRIGHTNESS << 8)
-RGB_BLUE = (RGB_BRIGHTNESS)
-#print("LED setup")
+
+
 
 #thread start
 #print("Starting threads")
