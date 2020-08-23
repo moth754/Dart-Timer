@@ -18,9 +18,9 @@ Item | Price | Quantity | Total |
 [10,000mAh USB Power Bank](https://www.amazon.co.uk/gp/product/B019GJLER8/ref=ppx_yo_dt_b_asin_title_o00_s01?ie=UTF8&psc=1) | £19.99 | 1 | £19.99
 [MAX001 Case](https://www.trifibre.co.uk/product/max001/) | £7.08 | 1 | £7.08
 [5v LED](https://uk.rs-online.com/web/p/leds/2285039/) | £0.48 | 1 | £0.48
-[100K Ohm Resistor](https://uk.rs-online.com/web/p/through-hole-fixed-resistors/7397617/) | £0.01 | 1 | £0.01
+[330 Ohm Resistor](https://uk.rs-online.com/web/p/through-hole-fixed-resistors/7077622/) | £0.12 | 1 | £0.12
 [PN2222 Transistor](https://uk.rs-online.com/web/p/bjt-bipolar-transistors/7390381/) | £0.13 | 1 | £0.13
-[5V Buzzer](https://thepihut.com/products/buzzer-5v-breadboard-friendly?variant=27739444945&currency=GBP&utm_medium=product_sync&utm_source=google&utm_content=sag_organic&utm_campaign=sag_organic&gclid=Cj0KCQjw6575BRCQARIsAMp-ksOtD1PSbcrUUb_ei5sLTMlS-M1LZnNn6ONEDou8cQBjmbgpSyrAYUwaAu06EALw_wcB) | £1 | 1 | £1
+[3V Buzzer](https://uk.rs-online.com/web/p/magnetic-buzzer-components/1118176) | £1.76 | 1 | £1.76
 [Molex RFID Antenna](https://uk.rs-online.com/web/p/rfid-antennas/1445000/) | £2.33 | 1 | £2.33
 [UFL to Coax Cable](https://uk.rs-online.com/web/p/coaxial-cable/1360915/?relevancy-data=636F3D3126696E3D4931384E53656172636847656E65726963266C753D656E266D6D3D6D61746368616C6C7061727469616C26706D3D5E5B5C707B4C7D5C707B4E647D2D2C2F255C2E5D2B2426706F3D31333326736E3D592673723D2673743D4B4559574F52445F53494E474C455F414C5048415F4E554D455249432673633D592677633D4E4F4E45267573743D552E464C2D4C502D3038384B32542D412D2831353029267374613D552E464C2D4C502D3038384B32542D412D31353026&searchHistory=%7B%22enabled%22%3Atrue%7D) | £2.22 | 1 | £2.22
 [Stripboard](https://uk.rs-online.com/web/p/stripboards/1004328/) | £8.44 | 1 | £8.44
@@ -32,7 +32,7 @@ Item | Price | Quantity | Total |
 Low capacity good quaity microSD | £3 | 1 | £3
 Wire (cut up alarm cable works well) | £2 | 1 | £2
 
-This all brings the total cost to £188.39 . I would love to get it lower without compormising quality or function. Wire and standoffs are also required.
+This all brings the total cost to £190 (give or take a few pence). I would love to get it lower without compormising quality or function. Wire and standoffs are also required.
 
 Reflective tape is also helpful for marking the location of the NFC antenna so competitors know where to scan. I#m planning on repurposing a reflective sticker.
 
