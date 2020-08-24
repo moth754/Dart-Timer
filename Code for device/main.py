@@ -105,7 +105,8 @@ def checkpending(): #checks the unsent list and sends and unsent taps
                 pybytes.send_signal(1,taps_pending[0])
                 del taps_pending[0]
             else:
-                time.sleep(0.5)
+                pybytes.connect()
+                time.sleep(60)
         else:
             time.sleep(0.5)
 
