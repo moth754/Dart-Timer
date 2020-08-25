@@ -93,7 +93,7 @@ def mainloop(): #main loop looking for and handling UIDs from chips
             tap = ("uid"+uid_send+"timestamp"+time_send)
             taps_pending.append(tap)
             chiplog(tap)
-            #print(tap)
+            print(tap)
             posindication()
 
 def checkpending(): #checks the unsent list and sends and unsent taps
@@ -101,7 +101,7 @@ def checkpending(): #checks the unsent list and sends and unsent taps
     while True:
         if len(taps_pending) > 0:
             if pybytes.is_connected() == True:
-                #print("Sending " + taps_pending[0])
+                print("Sending " + taps_pending[0])
                 pybytes.send_signal(1,taps_pending[0])
                 del taps_pending[0]
                 time.sleep(1)
@@ -147,7 +147,7 @@ def setexternalrtc():
     time.sleep(5)
     
     if rtc.synced() == True:
-        #print("Time synced")
+        print("Time synced")
         time_now = rtc.now()
         #set date
         ds.Year(time_now[0])
@@ -158,13 +158,13 @@ def setexternalrtc():
         ds.Minute(time_now[4])
         ds.Second(time_now[5])
         #indicate
-        buzzer.set()
+        buzzer(True)
         time.sleep(0.5)
-        buzzer.reset()
+        buzzer(False)
 
 
     else:
-        #print("Time not synced")
+        print("Time not synced")
         errorlog("Time not synced") #and log
 
     led.reset()
