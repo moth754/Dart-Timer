@@ -12,6 +12,12 @@ import _thread
 import os
 import DS3231 #for RTC
 
+#imports for pybytes
+from _pybytes_config import PybytesConfig
+pybytes_config = PybytesConfig().read_config()
+from _pybytes import Pybytes
+pybytes = Pybytes(pybytes_config)
+
 #print("imports successful")
 
 ################# Functions start
@@ -98,6 +104,7 @@ def mainloop(): #main loop looking for and handling UIDs from chips
 
 def checkpending(): #checks the unsent list and sends and unsent taps
     global taps_pending
+    pybytes.connect()
     while True:
         if len(taps_pending) > 0:
             if pybytes.is_connected() == True:
@@ -106,7 +113,7 @@ def checkpending(): #checks the unsent list and sends and unsent taps
                 del taps_pending[0]
                 time.sleep(1)
             else:
-                pybytes.connect()
+                pybytes.reconnect()
                 time.sleep(60)
         else:
             time.sleep(0.5)
@@ -116,7 +123,7 @@ def posindication(): #beep and flash for successful scan
     #buzzer.set()
     buzzer(True)
     led.set()
-    time.sleep(0.5)
+    time.sleep(0.3)
     #buzzer.reset()
     buzzer(False)
     led.reset()
@@ -124,7 +131,7 @@ def posindication(): #beep and flash for successful scan
 
 def negindication(): #periodic flash
     global count
-    if count == 300:
+    if count == 150:
         led.set()
         time.sleep(0.2)
         led.reset()
@@ -213,9 +220,6 @@ py = Pyscan()
 nfc = MFRC630(py)
 #print("Scan setup")
 nfc.mfrc630_cmd_init() # Initialise the MFRC630 with some settings
-
-
-
 
 #thread start
 #print("Starting threads")
