@@ -17,6 +17,15 @@ Why is this different to other timing systems?
 
 ##### Go Fund Me link for the next stage of development - https://gf.me/u/yiimtw
 
+## Important code information
+You need to run the following code via REPL to disable pybytes autostart. If you don't do this you will experience slowdowns due to mutliple threads connecting to the network. It will survive reboots.
+
+```python
+import pycom
+pycom.pybytes_on_boot(False)
+```
+
+
 ## Features
 ### Working and tested
 * Records taps by NFC chips to local SD and send to Google Sheet
