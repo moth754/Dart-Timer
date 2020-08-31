@@ -11,12 +11,18 @@ from PCA9554 import PCA9554 #for io expander
 import _thread
 import os
 import DS3231 #for RTC
+import gc
 
 #imports for pybytes
 from _pybytes_config import PybytesConfig
 pybytes_config = PybytesConfig().read_config()
 from _pybytes import Pybytes
 pybytes = Pybytes(pybytes_config)
+
+#setup for watchdog
+from machine import WDT
+wdt = WDT(timeout=10000)  # enable it with a timeout of 10 seconds
+wdt.feed()
 
 #print("imports successful")
 
@@ -38,6 +44,12 @@ def errorlog(error): #local recording of errors as csv on sd card - needs some i
     f.write("\n")
     f.close()
 
+def minute_check(): #get last digit
+    time_now = ds.DateTime()
+    minute = str(time_now[5])
+    if len(minute) > 1:
+        minute = minute[1:2]
+    return(minute)
 
 def time_calc(): #get time from external RTC
     time_now = ds.DateTime()
@@ -50,6 +62,14 @@ def time_calc(): #get time from external RTC
     second = str(time_now[6])
     if len(second) == 1:
         second = "0" + second
+    if len(month) == 1:
+        month = "0" + month
+    if len(day) == 1:
+        day = "0" + day
+    if len(hour) == 1:
+        hour = "0" + hour
+    if len(minute) == 1:
+        minute = "0" + minute
 
     #millisecond = str(time_now[7])
     time_stamp = year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second
@@ -81,8 +101,9 @@ def chipscan(): #picking up the NFC chips
     nfc.mfrc630_cmd_init()
 
 def mainloop(): #main loop looking for and handling UIDs from chips
+    global taps_pending
+    taps_pending.append("POWERED ON")
     while True:
-        global taps_pending
         uid_send = chipscan()
         if uid_send == "misread":
             time.sleep(0.01)
@@ -101,22 +122,31 @@ def mainloop(): #main loop looking for and handling UIDs from chips
             chiplog(tap)
             print(tap)
             posindication()
+        wdt.feed()
 
 def checkpending(): #checks the unsent list and sends and unsent taps
     global taps_pending
-    pybytes.connect()
-    while True:
-        if len(taps_pending) > 0:
-            if pybytes.is_connected() == True:
+    try:
+        pybytes.connect()
+        minuteend = minute_check()
+        while True:
+            if len(taps_pending) > 0 and pybytes.isconnected() == True:
                 print("Sending " + taps_pending[0])
                 pybytes.send_signal(1,taps_pending[0])
                 del taps_pending[0]
                 time.sleep(1)
+                gc.collect()
+            elif pybytes.isconnected() == False and minuteend == "5":
+                pybytes.connect()
+                time.sleep(300)
+                gc.collect()
+            elif len(taps_pending) == 0 and pybytes.isconnected() == True:
+                pybytes.send_ping_message()
             else:
-                pybytes.reconnect()
-                time.sleep(60)
-        else:
-            time.sleep(0.5)
+                time.sleep(0.5)
+    except:
+        print("Check pending error")
+        errorlog("checkpending thread")
 
 def posindication(): #beep and flash for successful scan
     global count
@@ -131,7 +161,7 @@ def posindication(): #beep and flash for successful scan
 
 def negindication(): #periodic flash
     global count
-    if count == 150:
+    if count == 50:
         led.set()
         time.sleep(0.2)
         led.reset()
@@ -178,10 +208,14 @@ def setexternalrtc():
 
 ################# Functions end
 
+#setup automatic garbage collection
+gc.enable()
+
 #setup SD card
 sd = SD()
 os.mount(sd, "/sd")
 #print("SD card setup")
+
 
 #setup LEDs and buzzer using Pin
 #led = Pin('P2', mode=Pin.OUT) 
@@ -205,6 +239,8 @@ time.sleep(1)
 #buzzer.reset()
 led.reset()
 
+wdt.feed() #feed timeout
+
 #clock setup
 rtc = RTC() #internal RTC module
 i2c = I2C(0, pins=('P22','P21')) #setup i2c interface
@@ -220,6 +256,8 @@ py = Pyscan()
 nfc = MFRC630(py)
 #print("Scan setup")
 nfc.mfrc630_cmd_init() # Initialise the MFRC630 with some settings
+
+wdt.feed() #feed timeout
 
 #thread start
 #print("Starting threads")
