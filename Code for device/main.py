@@ -13,6 +13,13 @@ import os
 import DS3231 #for RTC
 import gc
 
+#for network check
+from network import LTE
+lte=LTE()
+netstate = False
+from network import WLAN
+wlan = WLAN()
+
 #imports for pybytes
 from _pybytes_config import PybytesConfig
 from _pybytes import Pybytes
@@ -158,6 +165,17 @@ def setexternalrtc():
         print("Time not synced")
     led.reset()
 
+def network_check():
+    global netstate
+    if lte.isconnected() == True:
+        netstate = True
+    elif wlan.isconnected() == True:
+        netstate = True
+    else:
+        netstate = False
+    
+    return(netstate)
+
 ################# SubFunctions end and main thread functions start
 
 def mainloop(): #main loop looking for and handling UIDs from chips
@@ -184,9 +202,11 @@ def mainloop(): #main loop looking for and handling UIDs from chips
         time.sleep(0.05)
 
 def checkpending(): #checks the unsent list and sends and unsent taps
-    global taps_pending     
+    global taps_pending
+    pybytes.start()
+    time.sleep(30)     
     while True:
-        if pybytes.is_connected() == True:
+        if network_check() == True:
             if len(taps_pending) > 0:
                 print("Sending " + taps_pending[0])
                 pybytes.send_signal(1,taps_pending[0])
@@ -200,8 +220,13 @@ def checkpending(): #checks the unsent list and sends and unsent taps
             else:
                 print("Sleeping with connection")
                 time.sleep(1)
-        elif pybytes.is_connected() == False:
+        elif network_check() == False:
+            print("Disconnecting - no connection")
+            pybytes.disconnect()
+            time.sleep(60)
+            print("Attempting to connect again")
             pybytes.connect()
+            time.sleep(10)
         else:
             print("Sleeping without connection")
             time.sleep(1)
