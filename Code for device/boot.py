@@ -5,6 +5,7 @@ import pycom
 from machine import Pin
 
 pycom.heartbeat(False) #turn off RGB LED - need that pin
+#pycom.pybytes_on_boot(True)
 
 p=Pin('P12', mode=Pin.OUT)(True)
 #wlan = WLAN()
