@@ -6,34 +6,23 @@ from pyscan import Pyscan
 from MFRC630 import MFRC630
 import time
 import pycom
-from machine import SD, I2C, RTC, Pin
-from PCA9554 import PCA9554 #for io expander
+from machine import SD, I2C, RTC, Pin, ADC
+from pca9554 import PCA9554 #for io expander
 import _thread
 import os
 import DS3231 #for RTC
 import gc
 
-#for network check
-from network import LTE
-lte=LTE()
-netstate = False
-from network import WLAN
-wlan = WLAN()
-
-#imports for pybytes
-from _pybytes_config import PybytesConfig
-from _pybytes import Pybytes
-pybytes_config = PybytesConfig().read_config()
-pybytes = Pybytes(pybytes_config)
+#imports for pybytes if doing manual on and off or reading
+#from _pybytes_config import PybytesConfig
+#from _pybytes import Pybytes
+#pybytes_config = PybytesConfig().read_config()
+#pybytes = Pybytes(pybytes_config)
 
 
 
-#setup for watchdog
+#import for watchdog
 #from machine import WDT
-#wdt = WDT(timeout=50000)  # enable it with a timeout of 50 seconds
-#wdt.feed()
-
-#print("imports successful")
 
 ################# Functions start
 
@@ -76,12 +65,12 @@ def time_calc(): #get time from external RTC
 
     return(time_stamp)
 
-def minute_check(): #get last digit
+def minute_check(): #get last two digits
     time_now = ds.DateTime()
     minute = str(time_now[5])
     del time_now
-    if len(minute) > 1:
-        minute = minute[1:2]
+    if len(minute) == 1:
+        minute = "0" + minute
     return(minute)
 
 def chipscan(): #picking up the NFC chips
@@ -98,7 +87,7 @@ def chipscan(): #picking up the NFC chips
             uid_str=''.join(uid_str)
             #print(uid_str)
             return(uid_str)
-            
+
         else:
             return("misread")
     else:
@@ -122,7 +111,7 @@ def posindication(): #beep and flash for successful scan
 
 def negindication(): #periodic flash
     global count
-    if count == 30:
+    if count == 15:
         led.set()
         time.sleep(0.2)
         led.reset()
@@ -139,11 +128,10 @@ def setexternalrtc():
     buzzer(True)
     time.sleep(0.5)
     buzzer(False)
-    
+
     #start ntp sync
     rtc.ntp_sync("0.uk.pool.ntp.org",update_period=3600)
     time.sleep(5)
-    
     if rtc.synced() == True:
         print("Time synced")
         time_now = rtc.now()
@@ -159,28 +147,18 @@ def setexternalrtc():
         buzzer(True)
         time.sleep(0.5)
         buzzer(False)
-
-
     else:
         print("Time not synced")
     led.reset()
 
-def network_check():
-    global netstate
-    if lte.isconnected() == True:
-        netstate = True
-    elif wlan.isconnected() == True:
-        netstate = True
-    else:
-        netstate = False
-    
-    return(netstate)
+
+
 
 ################# SubFunctions end and main thread functions start
 
 def mainloop(): #main loop looking for and handling UIDs from chips
+    #wdt = WDT(timeout=50000)  # enable it with a timeout of 50 seconds
     global taps_pending
-    taps_pending.append("POWERED ON")
     while True:
         uid_send = chipscan()
         if uid_send == "misread":
@@ -190,46 +168,48 @@ def mainloop(): #main loop looking for and handling UIDs from chips
         elif uid_send == "115771133000000":
             setexternalrtc()
         else:
-            #lock.acquire()
+            sendlock.acquire()
             tap = ("uid"+uid_send+"timestamp"+time_calc())
             taps_pending.append(tap)
+            sendlock.release()
             chiplog(tap)
             print(tap)
             del tap
+            del uid_send
             posindication()
-            #lock.release()
         #wdt.feed()
         time.sleep(0.05)
 
 def checkpending(): #checks the unsent list and sends and unsent taps
+    print("Check Pending Started")
     global taps_pending
-    pybytes.start()
-    time.sleep(30)     
+    time.sleep(5)
+    pybytes.send_signal(3,"power on")
     while True:
-        if network_check() == True:
-            if len(taps_pending) > 0:
-                print("Sending " + taps_pending[0])
-                pybytes.send_signal(1,taps_pending[0])
-                del taps_pending[0]
-                time.sleep(1)
-            elif minute_check() == "0"or minute_check() == "5" :
-                pybytes.send_ping_message()
-                print("Ping Sent")
-                time.sleep(70)
-                gc.collect()
+        try:
+            #pybytes.isconnected()
+            #minutes = minute_check()
+            if pybytes.isconnected() == True:
+                sendlock.acquire()
+                if len(taps_pending) > 0: #if there are taps to send, send them
+                    print("Sending " + taps_pending[0])
+                    pybytes.send_signal(1,taps_pending[0])
+                    del taps_pending[0]
+                    sendlock.release()
+                    time.sleep(0.5)
+                    #gc.collect()
+                else: #there is nothing to send
+                    sendlock.release()
+                    #print("Sleeping with connection")
+                    #pybytes.send_signal(2,"sleeping with  connection")
+                    time.sleep(1)
+                    #gc.collect()
             else:
-                print("Sleeping with connection")
+                #print("Sleeping without connection")
                 time.sleep(1)
-        elif network_check() == False:
-            print("Disconnecting - no connection")
-            pybytes.disconnect()
-            time.sleep(60)
-            print("Attempting to connect again")
-            pybytes.connect()
-            time.sleep(10)
-        else:
-            print("Sleeping without connection")
-            time.sleep(1)
+                #gc.collect()
+        except:
+            time.sleep(120)
 
 ################# main thread functions end
 
@@ -270,7 +250,7 @@ nfc.mfrc630_cmd_init() # Initialise the MFRC630 with some settings
 #wdt.feed() #feed timeout
 
 #setup thread lock
-lock = _thread.allocate_lock()
+sendlock = _thread.allocate_lock()
 
 #thread start
 _thread.start_new_thread(mainloop,())
