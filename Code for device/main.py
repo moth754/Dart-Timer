@@ -12,6 +12,7 @@ import _thread
 import os
 import DS3231 #for RTC
 import gc
+import ubinascii
 
 #imports for pybytes if doing manual on and off or reading
 #from _pybytes_config import PybytesConfig
@@ -78,15 +79,27 @@ def chipscan(): #picking up the NFC chips
     atqa = nfc.mfrc630_iso14443a_WUPA_REQA(nfc.MFRC630_ISO14443_CMD_REQA)
     if (atqa != 0):
         # A card has been detected, read UID
-        uid = bytearray(10)
+        uid = bytearray(11)
         uid_len = nfc.mfrc630_iso14443a_select(uid)
         #print("Detected")
         if (uid_len > 0): # A valid UID has been detected, print details
             #print("UID Detected")
-            uid_str=map(str,uid)
-            uid_str=''.join(uid_str)
-            #print(uid_str)
-            return(uid_str)
+            #print(uid_len)
+            if uid_len == 4:
+                uid = uid[:4]
+            elif uid_len == 7:
+                uid = uid[:7]
+            elif uid_len == 8:
+                uid = uid[:8]
+            else:
+                print("UID length max")
+            #print(uid)
+            uidhex = ubinascii.hexlify(uid) #turn the uid into a hex
+            uidhex = uidhex.decode('UTF-8','ignore') #turn the jhex into a string
+            uidhex = uidhex.upper() #upper case all letters
+            print(uidhex)
+            
+            return(uidhex)
 
         else:
             return("misread")
@@ -159,14 +172,20 @@ def setexternalrtc():
 def mainloop(): #main loop looking for and handling UIDs from chips
     #wdt = WDT(timeout=50000)  # enable it with a timeout of 50 seconds
     global taps_pending
+    global threadsswitch
     while True:
         uid_send = chipscan()
         if uid_send == "misread":
             negindication()
         elif uid_send == "no_chip":
             negindication()
-        elif uid_send == "115771133000000":
+        elif uid_send == "734D0185":
             setexternalrtc()
+        elif uid_send == "C3970B85":
+            killlock.acquire()
+            threadsswitch = False
+            killlock.release()
+            _thread.exit()
         else:
             sendlock.acquire()
             tap = ("uid"+uid_send+"timestamp"+time_calc())
@@ -181,10 +200,16 @@ def mainloop(): #main loop looking for and handling UIDs from chips
         time.sleep(0.05)
 
 def checkpending(): #checks the unsent list and sends and unsent taps
+    #pybytes.connect()
+    #time.sleep(60)
     print("Check Pending Started")
     global taps_pending
     time.sleep(5)
-    pybytes.send_signal(3,"power on")
+    sendlock.acquire()
+    poweronmsg = ("power_on_"+time_calc())
+    pybytes.send_signal(3,poweronmsg)
+    sendlock.release()
+    del poweronmsg
     while True:
         try:
             #pybytes.isconnected()
@@ -196,7 +221,7 @@ def checkpending(): #checks the unsent list and sends and unsent taps
                     pybytes.send_signal(1,taps_pending[0])
                     del taps_pending[0]
                     sendlock.release()
-                    time.sleep(0.5)
+                    time.sleep(1)
                     #gc.collect()
                 else: #there is nothing to send
                     sendlock.release()
@@ -206,10 +231,17 @@ def checkpending(): #checks the unsent list and sends and unsent taps
                     #gc.collect()
             else:
                 #print("Sleeping without connection")
-                time.sleep(1)
+                time.sleep(600)
+                #pybytes.connect() #reconnect pybytes
                 #gc.collect()
-        except:
-            time.sleep(120)
+            killlock.acquire()
+            if threadsswitch == False:
+                killlock.release()
+                _thread.exit()
+            killlock.release()
+        except: 
+            time.sleep(5)
+            
 
 ################# main thread functions end
 
@@ -249,8 +281,12 @@ nfc.mfrc630_cmd_init() # Initialise the MFRC630 with some settings
 
 #wdt.feed() #feed timeout
 
+#setup kill variable
+threadsswitch = True
+
 #setup thread lock
 sendlock = _thread.allocate_lock()
+killlock = _thread.allocate_lock()
 
 #thread start
 _thread.start_new_thread(mainloop,())
