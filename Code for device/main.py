@@ -98,7 +98,7 @@ def chipscan(): #picking up the NFC chips
             uidhex = uidhex.decode('UTF-8','ignore') #turn the jhex into a string
             uidhex = uidhex.upper() #upper case all letters
             print(uidhex)
-            
+
             return(uidhex)
 
         else:
@@ -204,7 +204,7 @@ def checkpending(): #checks the unsent list and sends and unsent taps
     #time.sleep(60)
     print("Check Pending Started")
     global taps_pending
-    time.sleep(5)
+    time.sleep(60)
     sendlock.acquire()
     poweronmsg = ("power_on_"+time_calc())
     pybytes.send_signal(3,poweronmsg)
@@ -214,7 +214,7 @@ def checkpending(): #checks the unsent list and sends and unsent taps
         try:
             #pybytes.isconnected()
             #minutes = minute_check()
-            if pybytes.isconnected() == True:
+            if pymesh_check() == True:
                 sendlock.acquire()
                 if len(taps_pending) > 0: #if there are taps to send, send them
                     print("Sending " + taps_pending[0])
@@ -238,12 +238,29 @@ def checkpending(): #checks the unsent list and sends and unsent taps
             if threadsswitch == False:
                 killlock.release()
                 _thread.exit()
+                break()
             killlock.release()
-        except: 
+        except:
             time.sleep(5)
-            
+
+def pymesh_check():
+    #global pymesh
+    status_check = pymesh.status_str()
+    status_check = status_check[5]
+    if status_check == "0":
+        status_check = False
+    elif status_check == "1":
+        status_check = False
+    else:
+        status_check = True
+    return(status_check)
+
 
 ################# main thread functions end
+
+#pymesh
+pymesh = pybytes.__pymesh.__pymesh
+#pymesh.status_str() whole status string - we want character 5
 
 #setup SD card
 sd = SD()
@@ -289,5 +306,7 @@ sendlock = _thread.allocate_lock()
 killlock = _thread.allocate_lock()
 
 #thread start
-_thread.start_new_thread(mainloop,())
+
 _thread.start_new_thread(checkpending,())
+
+mainloop()
