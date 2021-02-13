@@ -20,10 +20,49 @@ import ubinascii
 #pybytes_config = PybytesConfig().read_config()
 #pybytes = Pybytes(pybytes_config)
 
-
-
 #import for watchdog
-#from machine import WDT
+from machine import WDT
+
+#####################setups
+
+#pymesh
+pymesh = pybytes.__pymesh.__pymesh
+#pymesh.status_str() whole status string - we want character 5
+
+#setup SD card
+sd = SD()
+os.mount(sd, "/sd")
+
+#setup buzzer using Pin
+buzzer = Pin('P11', mode=Pin.OUT)
+#tests buzzer using pin
+buzzer(True)
+time.sleep(1)
+buzzer(False)
+
+#setup LEDs using IO expander
+led = PCA9554(line=1, direction=0)
+#tests LED using IO expander
+led.set()
+time.sleep(1)
+led.reset()
+
+#clock setup
+rtc = RTC() #internal RTC module
+i2c = I2C(0, pins=('P22','P21')) #setup i2c interface
+ds = DS3231.DS3231(i2c) #establish connection to i2c clock
+
+#setup taps pending list and counter
+taps_pending = []
+count = 0
+
+#setup scan
+py = Pyscan()
+nfc = MFRC630(py)
+nfc.mfrc630_cmd_init() # Initialise the MFRC630 with some settings
+
+#setup thread lock
+sendlock = _thread.allocate_lock()
 
 ################# Functions start
 
@@ -56,6 +95,7 @@ def time_calc(): #get time from external RTC
     #millisecond = str(time_now[7])
     time_stamp = year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second
 
+    #clear up
     del year
     del month
     del day
@@ -64,9 +104,9 @@ def time_calc(): #get time from external RTC
     del second
     del time_now
 
-    return(time_stamp)
+    return(time_stamp) #send the time stamp back
 
-def minute_check(): #get last two digits
+def minute_check(): #get last two digits - no longer used
     time_now = ds.DateTime()
     minute = str(time_now[5])
     del time_now
@@ -98,9 +138,7 @@ def chipscan(): #picking up the NFC chips
             uidhex = uidhex.decode('UTF-8','ignore') #turn the jhex into a string
             uidhex = uidhex.upper() #upper case all letters
             print(uidhex)
-
             return(uidhex)
-
         else:
             return("misread")
     else:
@@ -124,7 +162,7 @@ def posindication(): #beep and flash for successful scan
 
 def negindication(): #periodic flash
     global count
-    if count == 15:
+    if count == 10:
         led.set()
         time.sleep(0.2)
         led.reset()
@@ -143,12 +181,11 @@ def setexternalrtc():
     buzzer(False)
 
     #start ntp sync
-    rtc.ntp_sync("0.uk.pool.ntp.org",update_period=3600)
+    rtc.ntp_sync("0.uk.pool.ntp.org",update_period=3600) #get the time and sync microprocessor time
     time.sleep(5)
     if rtc.synced() == True:
-        print("Time synced")
         time_now = rtc.now()
-        #set date
+        #set date on external RTC
         ds.Year(time_now[0])
         ds.Month(time_now[1])
         ds.Day(time_now[2])
@@ -156,7 +193,8 @@ def setexternalrtc():
         ds.Hour(time_now[3])
         ds.Minute(time_now[4])
         ds.Second(time_now[5])
-        #indicate
+        #indicate on external RTC
+        print("Time synced")
         buzzer(True)
         time.sleep(0.5)
         buzzer(False)
@@ -164,13 +202,23 @@ def setexternalrtc():
         print("Time not synced")
     led.reset()
 
+def pymesh_check(): #checks the status of pymesh - only sends if connected
+    status_check = pymesh.status_str()
+    status_check = status_check[5]
+    if status_check == "0":
+        status_check = False
+    elif status_check == "1":
+        status_check = False
+    else:
+        status_check = True
+    return(status_check)
 
 
 
 ################# SubFunctions end and main thread functions start
 
 def mainloop(): #main loop looking for and handling UIDs from chips
-    #wdt = WDT(timeout=50000)  # enable it with a timeout of 50 seconds
+    wdt = WDT(timeout=10000)  # enable watchdog with a timeout of 10 seconds
     global taps_pending
     global threadsswitch
     while True:
@@ -181,30 +229,23 @@ def mainloop(): #main loop looking for and handling UIDs from chips
             negindication()
         elif uid_send == "734D0185":
             setexternalrtc()
-        elif uid_send == "C3970B85":
-            killlock.acquire()
-            threadsswitch = False
-            killlock.release()
-            _thread.exit()
         else:
-            sendlock.acquire()
             tap = ("uid"+uid_send+"timestamp"+time_calc())
+            chiplog(tap)
+            sendlock.acquire()
             taps_pending.append(tap)
             sendlock.release()
-            chiplog(tap)
             print(tap)
             del tap
             del uid_send
             posindication()
-        #wdt.feed()
-        time.sleep(0.05)
+        wdt.feed()
+        time.sleep(0.1)
 
 def checkpending(): #checks the unsent list and sends and unsent taps
-    #pybytes.connect()
-    #time.sleep(60)
     print("Check Pending Started")
+    #time.sleep(60) #not needed if not starting pybytes within main.py
     global taps_pending
-    time.sleep(60)
     sendlock.acquire()
     poweronmsg = ("power_on_"+time_calc())
     pybytes.send_signal(3,poweronmsg)
@@ -229,84 +270,17 @@ def checkpending(): #checks the unsent list and sends and unsent taps
                     #pybytes.send_signal(2,"sleeping with  connection")
                     time.sleep(1)
                     #gc.collect()
-            else:
+            else: #no connection
                 #print("Sleeping without connection")
-                time.sleep(600)
+                time.sleep(60)
                 #pybytes.connect() #reconnect pybytes
                 #gc.collect()
-            killlock.acquire()
-            if threadsswitch == False:
-                killlock.release()
-                _thread.exit()
-                break()
-            killlock.release()
         except:
             time.sleep(5)
 
-def pymesh_check():
-    #global pymesh
-    status_check = pymesh.status_str()
-    status_check = status_check[5]
-    if status_check == "0":
-        status_check = False
-    elif status_check == "1":
-        status_check = False
-    else:
-        status_check = True
-    return(status_check)
-
-
 ################# main thread functions end
 
-#pymesh
-pymesh = pybytes.__pymesh.__pymesh
-#pymesh.status_str() whole status string - we want character 5
 
-#setup SD card
-sd = SD()
-os.mount(sd, "/sd")
-
-#setup buzzer using Pin
-buzzer = Pin('P10', mode=Pin.OUT)
-#tests buzzer using pin
-buzzer(True)
-time.sleep(1)
-buzzer(False)
-
-#setup LEDs using IO expander
-led = PCA9554(line=1, direction=0)
-#tests LED using IO expander
-led.set()
-time.sleep(1)
-led.reset()
-
-#wdt.feed() #feed timeout
-
-#clock setup
-rtc = RTC() #internal RTC module
-i2c = I2C(0, pins=('P22','P21')) #setup i2c interface
-ds = DS3231.DS3231(i2c) #establish connection to i2c clock
-
-#setup taps pending list and counter
-taps_pending = []
-count = 0
-
-#setup scan
-py = Pyscan()
-nfc = MFRC630(py)
-nfc.mfrc630_cmd_init() # Initialise the MFRC630 with some settings
-
-#wdt.feed() #feed timeout
-
-#setup kill variable
-threadsswitch = True
-
-#setup thread lock
-sendlock = _thread.allocate_lock()
-killlock = _thread.allocate_lock()
-
-#thread start
-
+#thread start and mainloop start
 _thread.start_new_thread(checkpending,())
-
 mainloop()
